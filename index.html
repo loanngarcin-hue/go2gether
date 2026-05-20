@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f59e0b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Go2gether">
+<meta name="description" content="Trouve ton partenaire de sport et entraîne-toi ensemble.">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="icon" href="/icon-192.png">
+<title>Go2gether</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --orange:#f59e0b;
+  --orange-dark:#d97706;
+  --orange-light:#fef3c7;
+  --orange-mid:#fed7aa;
+  --text:#111827;
+  --text-2:#6b7280;
+  --text-3:#9ca3af;
+  --bg:#f9fafb;
+  --surface:#ffffff;
+  --border:#e5e7eb;
+  --border-light:#f3f4f6;
+  --green:#16a34a;
+  --green-bg:#dcfce7;
+  --red:#dc2626;
+  --red-bg:#fee2e2;
+  --blue:#3b82f6;
+  --radius:12px;
+  --radius-sm:8px;
+  --radius-pill:999px;
+  --font:'Plus Jakarta Sans',sans-serif;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  --shadow:0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg:0 10px 32px rgba(0,0,0,0.12);
+  --header-h:60px;
+}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+
+/* ── HEADER ── */
+.header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);height:var(--header-h)}
+.header-inner{max-width:1100px;margin:0 auto;padding:0 24px;height:100%;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:8px;text-decoration:none;cursor:pointer}
+.brand-logo{width:34px;height:34px;border-radius:9px;overflow:hidden;flex-shrink:0}
+.brand-logo img{width:100%;height:100%;object-fit:cover}
+.brand-name{font-size:17px;font-weight:800;color:var(--text);letter-spacing:-.3px}
+.header-nav{display:flex;align-items:center;gap:4px}
+.nav-link{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-pill);font-size:13.5px;font-weight:500;color:var(--text-2);cursor:pointer;border:none;background:none;font-family:var(--font);transition:all .15s;text-decoration:none;white-space:nowrap}
+.nav-link svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav-link:hover{color:var(--text);background:var(--border-light)}
+.nav-link.active{background:var(--orange);color:#fff;font-weight:600}
+.nav-link.active svg{stroke:#fff}
+
+/* ── MAIN ── */
+.main{min-height:calc(100vh - var(--header-h));padding-bottom:32px}
+/* Mobile bottom nav */
+.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.mobile-nav-items{display:flex;justify-content:space-around;height:56px;align-items:center}
+.mob-btn{display:flex;flex-direction:column;align-items:center;gap:2px;border:none;background:none;cursor:pointer;color:var(--text-3);font-family:var(--font);padding:0 12px;transition:color .15s}
+.mob-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mob-btn span{font-size:10px;font-weight:500}
+.mob-btn.active{color:var(--orange)}
+@media(max-width:640px){
+  .header-nav{display:none}
+  .mobile-nav{display:block}
+  .main{padding-bottom:72px}
+}
+
+/* ── PAGE LAYOUT ── */
+.page{display:none}
+.page.active{display:block;animation:fadeUp .25s ease}
+.page-wrap{max-width:1100px;margin:0 auto;padding:32px 24px 0}
+.page-wrap-narrow{max-width:700px;margin:0 auto;padding:32px 24px 0}
+.page-title{font-size:clamp(22px,3vw,28px);font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+.page-title span{color:var(--orange)}
+.page-sub{font-size:13.5px;color:var(--text-2);margin-bottom:24px}
+
+/* ── SEARCH ── */
+.search-wrap{position:relative;margin-bottom:16px}
+.search-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--text-3);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none}
+.search-input{width:100%;height:46px;padding:0 14px 0 42px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-pill);font-family:var(--font);font-size:13.5px;color:var(--text);outline:none;transition:border-color .15s;box-shadow:var(--shadow-sm)}
+.search-input::placeholder{color:var(--text-3)}
+.search-input:focus{border-color:var(--orange)}
+.search-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--text-3);font-size:18px;line-height:1}
+
+/* ── SPORT PILLS SCROLL ── */
+.sport-scroll-wrap{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.scroll-arrow{width:28px;height:28px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s}
+.scroll-arrow:hover{background:var(--border-light)}
+.scroll-arrow svg{width:14px;height:14px;stroke:var(--text-2);fill:none;stroke-width:2;stroke-linecap:round}
+.sport-pills{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;flex:1}
+.sport-pills::-webkit-scrollbar{display:none}
+.sport-pill{flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s;font-family:var(--font)}
+.sport-pill:hover{border-color:var(--orange);background:var(--orange-light)}
+.sport-pill.active{background:var(--orange);border-color:var(--orange);color:#fff}
+.sport-pill-top{font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:5px}
+.sport-pill-count{font-size:11px;color:var(--text-3);margin-top:1px}
+.sport-pill.active .sport-pill-count{color:rgba(255,255,255,.75)}
+
+/* ── LEVEL / AVAIL CHIPS ── */
+.chips-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.chip{padding:5px 13px;border-radius:var(--radius-pill);border:1px solid var(--border);background:var(--surface);font-size:12px;font-weight:500;color:var(--text-2);cursor:pointer;transition:all .15s;font-family:var(--font)}
+.chip:hover{border-color:var(--text-3);color:var(--text)}
+.chip.active{background:var(--text);border-color:var(--text);color:#fff}
+.chip-divider{width:1px;height:20px;background:var(--border);flex-shrink:0}
+
+/* ── RESULTS COUNT ── */
+.results-count{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-2);margin-bottom:16px}
+.results-count svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round}
+
+/* ── ATHLETE CARDS ── */
+.grid-3{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+
+.athlete-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .2s;animation:fadeUp .3s ease both;box-shadow:var(--shadow-sm)}
+.athlete-card:hover{box-shadow:var(--shadow);border-color:rgba(245,158,11,.3);transform:translateY(-2px)}
+.ac-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:0}
+.ac-ava{width:52px;height:52px;border-radius:12px;overflow:hidden;background:var(--orange-light);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ac-ava img{width:100%;height:100%;object-fit:cover}
+.ac-ava-icon{color:var(--orange)}
+.ac-ava-icon svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round}
+.ac-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px;transition:color .15s}
+.athlete-card:hover .ac-name{color:var(--orange)}
+.ac-city{font-size:12px;color:var(--text-2);display:flex;align-items:center;gap:3px}
+.ac-city svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.ac-tags{display:flex;align-items:center;gap:6px;margin-top:8px}
+.sport-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:var(--orange-light);color:var(--orange-dark);border-radius:var(--radius-pill);font-size:11.5px;font-weight:600}
+.level-text{font-size:11.5px;color:var(--text-2)}
+.ac-bio{margin-top:10px;font-size:12.5px;color:var(--text-2);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.avail-wrap{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap}
+.avail-chip{padding:3px 9px;background:var(--border-light);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:500;color:var(--text-2)}
+
+/* ── SESSION CARDS ── */
+.session-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:all .2s;animation:fadeUp .3s ease both;box-shadow:var(--shadow-sm)}
+.session-card:hover{box-shadow:var(--shadow);border-color:rgba(245,158,11,.3);transform:translateY(-2px)}
+.sc-stripe{height:4px;background:linear-gradient(90deg,var(--orange),#fbbf24)}
+.sc-body{padding:14px 16px}
+.sc-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+.sc-tags{display:flex;align-items:center;gap:6px;margin-bottom:7px}
+.sc-title{font-size:14px;font-weight:700;color:var(--text);transition:color .15s;line-height:1.3}
+.session-card:hover .sc-title{color:var(--orange)}
+.sc-arrow{width:20px;height:20px;flex-shrink:0;color:var(--text-3);transition:all .15s;margin-top:2px}
+.sc-arrow svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.session-card:hover .sc-arrow{color:var(--orange)}
+.sc-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text-2);margin-bottom:10px}
+.sc-meta-item{display:flex;align-items:center;gap:4px}
+.sc-meta-item svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.sc-dist{font-weight:700;color:var(--text)}
+.sc-footer{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border-light)}
+.sc-participants{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-2)}
+.sc-participants svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.spots-badge{padding:3px 10px;border-radius:var(--radius-pill);font-size:11.5px;font-weight:600}
+.spots-open{background:var(--orange-light);color:var(--orange-dark)}
+.spots-full{background:var(--red-bg);color:var(--red)}
+
+/* ── BACK LINK ── */
+.back-link{display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text-2);cursor:pointer;border:none;background:none;padding:0;margin-bottom:16px;font-family:var(--font);transition:color .15s}
+.back-link:hover{color:var(--text)}
+.back-link svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+
+/* ── PROFILE DETAIL ── */
+.profile-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:24px;box-shadow:var(--shadow-sm)}
+.profile-card-banner{height:60px;background:linear-gradient(135deg,var(--orange-light),#fed7aa)}
+.profile-card-body{padding:0 20px 20px}
+.profile-ava-row{display:flex;align-items:flex-start;justify-content:space-between;margin-top:-28px;margin-bottom:14px}
+.profile-big-ava{width:56px;height:56px;border-radius:14px;overflow:hidden;background:var(--orange-light);display:flex;align-items:center;justify-content:center;border:3px solid var(--surface);flex-shrink:0}
+.profile-big-ava img{width:100%;height:100%;object-fit:cover}
+.profile-big-ava svg{width:24px;height:24px;stroke:var(--orange);fill:none;stroke-width:1.5;stroke-linecap:round}
+.profile-name{font-size:19px;font-weight:800;letter-spacing:-.3px;margin-bottom:3px}
+.profile-city{font-size:12.5px;color:var(--text-2);display:flex;align-items:center;gap:3px;margin-bottom:10px}
+.profile-city svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.profile-stats-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.profile-bio{font-size:13px;color:var(--text-2);line-height:1.7;margin-bottom:12px}
+.profile-avails{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.profile-action-row{display:flex;gap:8px}
+
+/* ── SESSION DETAIL ── */
+.session-detail-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:24px;box-shadow:var(--shadow-sm)}
+.sd-stripe{height:8px;background:linear-gradient(90deg,var(--orange),#fbbf24)}
+.sd-body{padding:20px}
+.sd-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.sd-sport-icon{width:44px;height:44px;border-radius:11px;background:var(--orange-light);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.sd-title{font-size:19px;font-weight:800;letter-spacing:-.3px;margin-bottom:5px}
+.sd-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mode-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:var(--radius-pill);font-size:11.5px;font-weight:600}
+.mode-open{background:var(--green-bg);color:var(--green)}
+.mode-request{background:var(--orange-light);color:var(--orange-dark)}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.info-cell{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px}
+.info-label{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;display:flex;align-items:center;gap:4px}
+.info-label svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.info-val{font-size:14px;font-weight:600;color:var(--text)}
+.info-sub{font-size:12px;color:var(--text-2);margin-top:1px}
+.sd-description{margin:14px 0}
+.sd-description h3{font-size:13px;font-weight:700;margin-bottom:6px}
+.sd-description p{font-size:13px;color:var(--text-2);line-height:1.7}
+.organizer-row{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:14px}
+.org-ava{width:36px;height:36px;border-radius:9px;background:var(--orange-light);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.org-ava svg{width:18px;height:18px;stroke:var(--orange);fill:none;stroke-width:1.5;stroke-linecap:round}
+.organizer-label{font-size:11px;color:var(--text-3);margin-bottom:2px}
+.organizer-name{font-size:13.5px;font-weight:600}
+.pending-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:var(--radius-sm);margin-bottom:6px}
+.pending-email{font-size:12.5px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── CHAT ── */
+.chat-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm)}
+.chat-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;font-size:14px;font-weight:700}
+.chat-header svg{width:15px;height:15px;stroke:var(--orange);fill:none;stroke-width:2;stroke-linecap:round}
+.chat-messages{height:260px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.chat-messages::-webkit-scrollbar{width:3px}
+.chat-messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.chat-msg{display:flex;flex-direction:column;max-width:72%;animation:fadeUp .2s ease}
+.chat-msg.mine{align-self:flex-end;align-items:flex-end}
+.chat-msg.theirs{align-self:flex-start;align-items:flex-start}
+.chat-bubble{padding:8px 13px;border-radius:var(--radius-sm);font-size:13px;line-height:1.5}
+.chat-msg.mine .chat-bubble{background:var(--orange);color:#fff;border-radius:12px 12px 4px 12px}
+.chat-msg.theirs .chat-bubble{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:12px 12px 12px 4px}
+.chat-meta{font-size:10.5px;color:var(--text-3);margin-top:3px}
+.chat-input-row{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--border)}
+.chat-input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-pill);font-family:var(--font);font-size:13px;color:var(--text);outline:none;background:var(--bg);transition:border-color .15s}
+.chat-input:focus{border-color:var(--orange)}
+.chat-input::placeholder{color:var(--text-3)}
+.chat-send{width:38px;height:38px;border-radius:50%;background:var(--orange);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+.chat-send:hover{background:var(--orange-dark)}
+.chat-send svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round}
+
+/* ── FORMS ── */
+.form-group{margin-bottom:16px}
+.form-label{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;display:block}
+.form-label span{color:var(--orange)}
+.form-input,.form-select,.form-textarea{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font);font-size:13.5px;color:var(--text);outline:none;background:var(--surface);transition:border-color .15s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--orange)}
+.form-input::placeholder,.form-textarea::placeholder{color:var(--text-3)}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+.form-select option{background:#fff}
+.form-textarea{resize:vertical;min-height:90px;line-height:1.6}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-error{font-size:12px;color:var(--red);margin-top:6px;display:none}
+.form-error.show{display:block}
+.avail-btns{display:flex;gap:7px;flex-wrap:wrap}
+.avail-btn{padding:6px 14px;border-radius:var(--radius-pill);border:1px solid var(--border);background:var(--surface);font-size:12.5px;font-weight:500;color:var(--text-2);cursor:pointer;transition:all .15s;font-family:var(--font)}
+.avail-btn.active{background:var(--orange);border-color:var(--orange);color:#fff}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 20px;border-radius:var(--radius-sm);font-family:var(--font);font-size:13.5px;font-weight:600;cursor:pointer;transition:all .15s;border:none;white-space:nowrap}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0}
+.btn-orange{background:var(--orange);color:#fff}
+.btn-orange:hover{background:var(--orange-dark)}
+.btn-orange:disabled{opacity:.5;cursor:default}
+.btn-outline{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.btn-outline:hover{border-color:var(--text-3)}
+.btn-ghost{background:transparent;color:var(--text-2)}
+.btn-ghost:hover{color:var(--text)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid #fecaca}
+.btn-sm{padding:7px 14px;font-size:12.5px}
+.btn-sm svg{width:13px;height:13px}
+.btn-full{width:100%;height:48px;border-radius:var(--radius-sm);font-size:14.5px}
+.spin-sm{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+
+/* ── PROFILE FORM SECTION ── */
+.pform-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow-sm)}
+.pfs-header{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.pfs-title{font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.6px}
+.pfs-body{padding:4px 0}
+.pfs-row{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border-light)}
+.pfs-row:last-child{border-bottom:none}
+.pfs-key{font-size:13.5px;font-weight:500}
+.pfs-val{font-size:13px;color:var(--text-2);max-width:220px;text-align:right}
+.pfs-edit-body{padding:16px 18px}
+/* Profile avatar */
+.my-ava-wrap{position:relative;display:inline-block}
+.my-ava{width:72px;height:72px;border-radius:16px;overflow:hidden;background:var(--orange-light);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.my-ava img{width:100%;height:100%;object-fit:cover}
+.my-ava svg{width:28px;height:28px;stroke:var(--orange);fill:none;stroke-width:1.5;stroke-linecap:round}
+.my-ava-cam{position:absolute;bottom:-6px;right:-6px;width:26px;height:26px;border-radius:8px;background:var(--orange);border:2px solid #fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.my-ava-cam svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round}
+
+/* ── SKELETON ── */
+.skeleton{border-radius:var(--radius);background:linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);background-size:400px 100%;animation:shimmer 1.4s infinite}
+
+/* ── EMPTY STATE ── */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 20px;gap:12px;color:var(--text-2);text-align:center}
+.empty-icon{width:56px;height:56px;border-radius:16px;background:var(--border-light);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:2px}
+.empty-title{font-size:15px;font-weight:700;color:var(--text)}
+.empty-sub{font-size:13px}
+
+/* ── AUTH MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:300;opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(4px)}
+.overlay.open{opacity:1;pointer-events:all}
+.auth-card{background:var(--surface);border-radius:20px;width:420px;max-width:94vw;overflow:hidden;transform:translateY(14px) scale(.97);transition:transform .25s;position:relative;box-shadow:var(--shadow-lg)}
+.overlay.open .auth-card{transform:none}
+.auth-top{padding:28px 28px 20px;text-align:center;border-bottom:1px solid var(--border)}
+.auth-brand{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px}
+.auth-brand-logo{width:32px;height:32px;border-radius:8px;overflow:hidden}
+.auth-brand-logo img{width:100%;height:100%;object-fit:cover}
+.auth-brand-name{font-size:16px;font-weight:800;letter-spacing:-.3px}
+.auth-title{font-size:20px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px}
+.auth-sub{font-size:13px;color:var(--text-2)}
+.auth-body{padding:20px 24px 24px}
+.auth-hint{font-size:12.5px;padding:9px 13px;background:var(--orange-light);border:1px solid var(--orange-mid);border-radius:var(--radius-sm);color:var(--orange-dark);margin-bottom:16px;line-height:1.5;display:none}
+.auth-hint.show{display:block}
+.social-btns{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.social-btn{width:100%;padding:11px 16px;border-radius:var(--radius-sm);font-family:var(--font);font-size:13.5px;font-weight:500;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:10px}
+.social-btn svg{width:18px;height:18px;flex-shrink:0}
+.social-btn span{flex:1;text-align:left}
+.social-btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+.social-btn:disabled{opacity:.5;cursor:default;transform:none}
+.btn-google{background:#fff;color:#374151;border:1px solid var(--border)}
+.btn-github{background:#24292e;color:#fff;border:1px solid #24292e}
+.divider{display:flex;align-items:center;gap:10px;margin:2px 0 14px;color:var(--text-3);font-size:12px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.auth-err{font-size:12px;color:var(--red);margin-top:4px;display:none}
+.auth-err.show{display:block}
+.auth-toggle{text-align:center;margin-top:12px;font-size:13px;color:var(--text-2)}
+.auth-toggle a{color:var(--orange-dark);cursor:pointer;font-weight:600}
+.auth-close{position:absolute;top:12px;right:12px;width:28px;height:28px;border:none;background:var(--bg);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-2);font-size:14px;transition:background .15s}
+.auth-close:hover{background:var(--border)}
+
+/* ── SESSIONS JOINED ── */
+.joined-item{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border-light);cursor:pointer;transition:background .15s}
+.joined-item:last-child{border-bottom:none}
+.joined-item:hover{background:var(--bg)}
+.joined-item svg{width:14px;height:14px;stroke:var(--text-3);fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0;margin-left:auto}
+
+/* ── PENDING REQUESTS ── */
+.pending-section{margin-bottom:14px}
+.pending-title{font-size:13px;font-weight:700;margin-bottom:8px}
+
+/* ── PWA INSTALL ── */
+.install-banner{position:fixed;bottom:20px;right:20px;z-index:150;display:none;animation:fadeUp .3s ease}
+.install-banner.show{display:flex}
+.install-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:12px;max-width:300px;position:relative}
+@media(max-width:640px){.install-banner{bottom:72px;right:12px;left:12px}.install-card{width:100%;max-width:none}}
+.install-logo{width:40px;height:40px;border-radius:10px;overflow:hidden;flex-shrink:0}
+.install-logo img{width:100%;height:100%;object-fit:cover}
+.install-text strong{display:block;font-size:13px;font-weight:700;margin-bottom:1px}
+.install-text span{font-size:12px;color:var(--text-2)}
+.install-btns{display:flex;flex-direction:column;gap:5px;flex-shrink:0}
+.ibtn-p{padding:5px 12px;border-radius:7px;background:var(--orange);color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);white-space:nowrap}
+.ibtn-d{padding:5px 12px;border-radius:7px;background:var(--bg);color:var(--text-2);border:1px solid var(--border);font-size:12px;cursor:pointer;font-family:var(--font)}
+.install-x{position:absolute;top:5px;right:8px;border:none;background:none;cursor:pointer;color:var(--text-3);font-size:14px;line-height:1}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:10px 18px;border-radius:var(--radius-pill);font-size:13px;font-weight:500;opacity:0;transition:opacity .2s;pointer-events:none;z-index:400;white-space:nowrap;box-shadow:var(--shadow)}
+@media(max-width:640px){.toast{bottom:72px}}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-inner">
+    <div class="brand" onclick="goto('explorer')">
+      <div class="brand-logo"><img src="/icon-192.png" alt="Go2gether"></div>
+      <span class="brand-name">Go2gether</span>
+    </div>
+    <nav class="header-nav">
+      <button class="nav-link active" id="hl-explorer" onclick="goto('explorer',this)">
+        <svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><circle cx="18" cy="8" r="2"/><path d="M22 20v-1a3 3 0 00-3-3h-1"/></svg>
+        Explorer
+      </button>
+      <button class="nav-link" id="hl-sessions" onclick="goto('sessions',this)">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Sessions
+      </button>
+      <button class="nav-link" id="hl-create" onclick="requireAuth(()=>goto('create'))">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+        + Créer
+      </button>
+      <button class="nav-link" id="hl-profile" onclick="handleProfileClick()">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <span id="hl-profile-label">Profil</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mobile-nav">
+  <div class="mobile-nav-items">
+    <button class="mob-btn active" id="ml-explorer" onclick="goto('explorer',this,'ml')">
+      <svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><circle cx="18" cy="8" r="2"/><path d="M22 20v-1a3 3 0 00-3-3h-1"/></svg>
+      <span>Explorer</span>
+    </button>
+    <button class="mob-btn" id="ml-sessions" onclick="goto('sessions',this,'ml')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span>Sessions</span>
+    </button>
+    <button class="mob-btn" id="ml-create" onclick="requireAuth(()=>goto('create'))">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+      <span>Créer</span>
+    </button>
+    <button class="mob-btn" id="ml-profile" onclick="handleProfileClick()">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      <span>Profil</span>
+    </button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- EXPLORER -->
+  <div class="page active" id="page-explorer">
+    <div class="page-wrap">
+      <h1 class="page-title">Trouve ton <span>partenaire</span> de sport</h1>
+      <p class="page-sub">Connecte-toi avec des sportifs autour de toi et entraîne-toi ensemble.</p>
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input class="search-input" id="explorerSearch" placeholder="Rechercher par nom ou ville..." oninput="renderExplorer()">
+      </div>
+      <div class="sport-scroll-wrap">
+        <div class="scroll-arrow" onclick="scrollSports('explorer',-1)"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div>
+        <div class="sport-pills" id="explorerSportPills"></div>
+        <div class="scroll-arrow" onclick="scrollSports('explorer',1)"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+      </div>
+      <div class="chips-row" id="levelChips">
+        <div class="chip-divider"></div>
+      </div>
+      <div class="results-count" id="explorerCount">
+        <svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><circle cx="18" cy="8" r="2"/><path d="M22 20v-1a3 3 0 00-3-3h-1"/></svg>
+        <span>Chargement...</span>
+      </div>
+      <div id="explorerGrid"></div>
+    </div>
+  </div>
+
+  <!-- SESSIONS -->
+  <div class="page" id="page-sessions">
+    <div class="page-wrap">
+      <h1 class="page-title">Sessions <span>sportives</span></h1>
+      <p class="page-sub">Rejoins une session ou crée la tienne.</p>
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input class="search-input" id="sessionsSearch" placeholder="Rechercher une session..." oninput="renderSessions()">
+      </div>
+      <div class="sport-scroll-wrap">
+        <div class="scroll-arrow" onclick="scrollSports('sessions',-1)"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div>
+        <div class="sport-pills" id="sessionsSportPills"></div>
+        <div class="scroll-arrow" onclick="scrollSports('sessions',1)"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+      </div>
+      <div class="results-count" id="sessionsCount">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span>Chargement...</span>
+      </div>
+      <div id="sessionsGrid"></div>
+    </div>
+  </div>
+
+  <!-- CREATE SESSION -->
+  <div class="page" id="page-create">
+    <div class="page-wrap-narrow">
+      <button class="back-link" onclick="goto('sessions')">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        Retour aux sessions
+      </button>
+      <h1 class="page-title" style="display:flex;align-items:center;gap:9px">
+        <svg style="width:26px;height:26px;stroke:var(--orange);fill:none;stroke-width:2;stroke-linecap:round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Créer une session
+      </h1>
+      <p class="page-sub">Organise une sortie et invite des sportifs à te rejoindre.</p>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow-sm)">
+        <div class="form-group">
+          <label class="form-label">Titre <span>*</span></label>
+          <input class="form-input" id="cTitle" placeholder="Ex: Sortie running 10 km">
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Sport <span>*</span></label>
+            <select class="form-select" id="cSport"><option value="">Choisis un sport</option></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Niveau</label>
+            <select class="form-select" id="cLevel"><option value="all">Tous niveaux</option></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date et heure <span>*</span></label>
+          <input class="form-input" id="cDate" type="datetime-local">
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Ville <span>*</span></label>
+            <input class="form-input" id="cCity" placeholder="Ex: Paris">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Point de RDV</label>
+            <input class="form-input" id="cLocation" placeholder="Ex: Parc des Buttes-Chaumont">
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Distance</label>
+            <input class="form-input" id="cDist" placeholder="Ex: 10 km">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Places max <span>*</span></label>
+            <input class="form-input" id="cMax" type="number" min="2" max="50" value="5">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mode d'inscription</label>
+          <select class="form-select" id="cJoinMode">
+            <option value="open">🟢 Ouvert — inscription directe</option>
+            <option value="on_request">🔒 Sur demande — approbation requise</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" id="cDesc" placeholder="Décris ta session..."></textarea>
+        </div>
+        <div class="form-error" id="cErr"></div>
+        <button class="btn btn-orange btn-full" id="cBtn" onclick="submitCreate()">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+          Créer la session
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MY PROFILE -->
+  <div class="page" id="page-profile">
+    <div class="page-wrap-narrow">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <h1 class="page-title" style="margin-bottom:0">Mon profil</h1>
+        <button class="btn btn-ghost btn-sm" onclick="logout()" style="color:var(--text-2);gap:5px">
+          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Déconnexion
+        </button>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:22px">
+        <div class="my-ava-wrap">
+          <div class="my-ava" id="myAva" onclick="triggerAva()">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          </div>
+          <button class="my-ava-cam" onclick="triggerAva()">
+            <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </button>
+        </div>
+        <input type="file" id="avaInput" accept="image/*" style="display:none" onchange="uploadAva(this)">
+        <div>
+          <div style="font-size:16px;font-weight:800" id="myName">—</div>
+          <div style="font-size:12.5px;color:var(--text-2);margin-top:2px" id="myEmail">—</div>
+        </div>
+      </div>
+
+      <!-- View mode -->
+      <div id="profileViewSection">
+        <div class="pform-section">
+          <div class="pfs-header">
+            <span class="pfs-title">Profil sportif</span>
+            <button class="btn btn-ghost btn-sm" onclick="setProfileEdit(true)">Modifier</button>
+          </div>
+          <div class="pfs-body">
+            <div class="pfs-row"><span class="pfs-key">Nom</span><span class="pfs-val" id="pr-name">—</span></div>
+            <div class="pfs-row"><span class="pfs-key">Ville</span><span class="pfs-val" id="pr-city">—</span></div>
+            <div class="pfs-row"><span class="pfs-key">Sport</span><span class="pfs-val" id="pr-sport">—</span></div>
+            <div class="pfs-row"><span class="pfs-key">Niveau</span><span class="pfs-val" id="pr-level">—</span></div>
+            <div class="pfs-row"><span class="pfs-key">Bio</span><span class="pfs-val" id="pr-bio" style="font-size:12.5px">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit mode -->
+      <div id="profileEditSection" style="display:none">
+        <div class="pform-section">
+          <div class="pfs-header"><span class="pfs-title">Modifier mon profil</span></div>
+          <div class="pfs-edit-body">
+            <div class="form-group"><label class="form-label">Nom <span>*</span></label><input class="form-input" id="e-name" placeholder="Prénom Nom"></div>
+            <div class="form-group"><label class="form-label">Ville</label><input class="form-input" id="e-city" placeholder="Ex: Lyon"></div>
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Sport <span>*</span></label><select class="form-select" id="e-sport"><option value="">Choisir…</option></select></div>
+              <div class="form-group"><label class="form-label">Niveau <span>*</span></label><select class="form-select" id="e-level"></select></div>
+            </div>
+            <div class="form-group"><label class="form-label">Bio</label><textarea class="form-textarea" id="e-bio" placeholder="Parle un peu de toi..."></textarea></div>
+            <div class="form-group">
+              <label class="form-label">Disponibilités</label>
+              <div class="avail-btns" id="e-avail"></div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-orange" style="flex:1" onclick="saveProfile()" id="saveBtn">Sauvegarder le profil</button>
+              <button class="btn btn-outline" onclick="setProfileEdit(false)">Annuler</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pform-section">
+        <div class="pfs-header"><span class="pfs-title">Sessions rejointes</span></div>
+        <div id="joinedList" style="padding:14px 18px;font-size:13px;color:var(--text-2)">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE DETAIL -->
+  <div class="page" id="page-profileDetail">
+    <div class="page-wrap-narrow">
+      <button class="back-link" id="profileBackBtn">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        Retour
+      </button>
+      <div id="profileDetailContent"></div>
+    </div>
+  </div>
+
+  <!-- SESSION DETAIL -->
+  <div class="page" id="page-sessionDetail">
+    <div class="page-wrap-narrow">
+      <button class="back-link" onclick="goto('sessions')">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        Retour aux sessions
+      </button>
+      <div id="sessionDetailContent"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- AUTH MODAL -->
+<div class="overlay" id="authOverlay" onclick="if(event.target===this&&!_pa)closeAuth()">
+  <div class="auth-card">
+    <button class="auth-close" onclick="closeAuth()">✕</button>
+    <div class="auth-top">
+      <div class="auth-brand">
+        <div class="auth-brand-logo"><img src="/icon-192.png" alt="Go2gether"></div>
+        <span class="auth-brand-name">Go2gether</span>
+      </div>
+      <div class="auth-title" id="authTitle">Rejoindre</div>
+      <div class="auth-sub" id="authSub">Connecte-toi pour accéder à toutes les fonctionnalités</div>
+    </div>
+    <div class="auth-body">
+      <div class="auth-hint" id="authHint"></div>
+      <div class="social-btns">
+        <button class="social-btn btn-google" id="btnGoogle" onclick="socialLogin('google')">
+          <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          <span>Continuer avec Google</span>
+        </button>
+        <button class="social-btn btn-github" id="btnGithub" onclick="socialLogin('github')">
+          <svg viewBox="0 0 24 24" fill="white"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          <span>Continuer avec GitHub</span>
+        </button>
+      </div>
+      <div class="divider">ou par email</div>
+      <div id="nameGroup" style="display:none;margin-bottom:14px">
+        <label class="form-label" style="font-size:13px">Prénom &amp; Nom</label>
+        <input class="form-input" id="authName" placeholder="Prénom Nom" type="text" style="margin-top:5px">
+      </div>
+      <div style="margin-bottom:12px">
+        <label class="form-label" style="font-size:13px">Email</label>
+        <input class="form-input" id="authEmail" placeholder="ton@email.com" type="email" style="margin-top:5px">
+      </div>
+      <div style="margin-bottom:4px">
+        <label class="form-label" style="font-size:13px">Mot de passe</label>
+        <input class="form-input" id="authPw" placeholder="••••••••" type="password" style="margin-top:5px" onkeydown="if(event.key==='Enter')emailLogin()">
+        <div class="auth-err" id="authErr"></div>
+      </div>
+      <button class="btn btn-orange btn-full" id="authBtn" onclick="emailLogin()" style="margin-top:12px">
+        <span id="authBtnTxt">Se connecter</span>
+      </button>
+      <div class="auth-toggle" id="authToggle">Pas encore de compte ? <a onclick="toggleAuthMode()">S'inscrire</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- PWA INSTALL BANNER -->
+<div class="install-banner" id="installBanner">
+  <div class="install-card">
+    <button class="install-x" onclick="dismissInstall()">✕</button>
+    <div class="install-logo"><img src="/icon-192.png" alt="Go2gether"></div>
+    <div class="install-text"><strong>Installer Go2gether</strong><span>Accès rapide depuis ton écran</span></div>
+    <div class="install-btns">
+      <button class="ibtn-p" onclick="triggerInstall()">Installer</button>
+      <button class="ibtn-d" onclick="dismissInstall()">Plus tard</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════
+// ⚠️  REMPLIS CES 2 VALEURS — Supabase → Settings → API
+const SUPABASE_URL      = 'https://pxejjmpfatvcejqinmcn.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4ZWpqbXBmYXR2Y2VqcWlubWNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NTkxMDksImV4cCI6MjA5MzAzNTEwOX0.VU8nKmHIvkuGvNEtzQfJVslsK_KocBX7zivqef3ZXT0';
+// ══════════════════════════════════════════════════
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ─── CONSTANTS ───────────────────────────────────────────────────────────────
+const SPORTS=[
+  {value:"running",label:"Running",emoji:"🏃"},
+  {value:"cycling",label:"Vélo",emoji:"🚴"},
+  {value:"swimming",label:"Natation",emoji:"🏊"},
+  {value:"hiking",label:"Randonnée",emoji:"🥾"},
+  {value:"fitness",label:"Fitness",emoji:"💪"},
+  {value:"yoga",label:"Yoga",emoji:"🧘"},
+  {value:"tennis",label:"Tennis",emoji:"🎾"},
+  {value:"basketball",label:"Basketball",emoji:"🏀"},
+  {value:"football",label:"Football",emoji:"⚽"},
+  {value:"other",label:"Autre",emoji:"🏅"},
+];
+const LEVELS=[
+  {value:"beginner",label:"Débutant"},
+  {value:"intermediate",label:"Intermédiaire"},
+  {value:"advanced",label:"Avancé"},
+  {value:"expert",label:"Expert"},
+];
+const AVAILABILITIES=[
+  {value:"morning",label:"Matin",emoji:"🌅"},
+  {value:"afternoon",label:"Après-midi",emoji:"☀️"},
+  {value:"evening",label:"Soir",emoji:"🌙"},
+  {value:"weekend",label:"Week-end",emoji:"📅"},
+];
+const getSport=v=>SPORTS.find(s=>s.value===v)||{value:v,label:v,emoji:"🏅"};
+const getLevel=v=>LEVELS.find(l=>l.value===v)?.label||v||'';
+const getAvail=v=>AVAILABILITIES.find(a=>a.value===v);
+const fmtDate=d=>{if(!d)return'';const dt=new Date(d);const day=dt.toLocaleDateString('en',{weekday:'short',day:'numeric',month:'short'});return`${day} · ${dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;};
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let _user=null,_profile=null;
+let _profiles=[],_sessions=[];
+let _curSession=null;
+let _explorerSport='',_explorerLevel='';
+let _sessionsSport='';
+let _authMode='login',_pa=null;
+let _deferredPrompt=null;
+
+const COLORS=['#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#06b6d4','#ec4899','#f97316'];
+const aColor=id=>{let h=0;for(let c of(id||''))h=(h<<5)-h+c.charCodeAt(0);return COLORS[Math.abs(h)%COLORS.length];};
+const ini=n=>{const p=(n||'?').trim().split(' ');return(p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();};
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+sb.auth.onAuthStateChange(async(event,session)=>{
+  _user=session?.user||null;
+  if(_user){await loadUserProfile();}
+  else _profile=null;
+  updateHeaderAva();
+  if(event==='SIGNED_IN'){
+    closeAuth();showToast('Bienvenue ! 👋');
+    if(_pa){const a=_pa;_pa=null;setTimeout(a,300);}
+  }
+});
+
+async function loadUserProfile(){
+  const{data}=await sb.from('profiles').select('*').eq('id',_user.id).single();
+  if(data){_profile=data;return;}
+  const name=_user.user_metadata?.full_name||_user.user_metadata?.name||_user.email?.split('@')[0]||'Sportif';
+  const avatar=_user.user_metadata?.avatar_url||_user.user_metadata?.picture||null;
+  const{data:np}=await sb.from('profiles').upsert({id:_user.id,display_name:name,avatar_url:avatar}).select().single();
+  _profile=np;
+}
+
+async function socialLogin(provider){
+  const id='btn'+provider[0].toUpperCase()+provider.slice(1);
+  const btn=document.getElementById(id);
+  const orig=btn.innerHTML;btn.innerHTML='<div class="spin-sm"></div><span>Connexion…</span>';btn.disabled=true;
+  const{error}=await sb.auth.signInWithOAuth({provider,options:{redirectTo:window.location.origin}});
+  if(error){showAuthErr(error.message);btn.innerHTML=orig;btn.disabled=false;}
+}
+
+async function emailLogin(){
+  const email=document.getElementById('authEmail').value.trim();
+  const pw=document.getElementById('authPw').value;
+  if(!email||!pw){showAuthErr('Remplis tous les champs');return;}
+  const btn=document.getElementById('authBtn');
+  btn.disabled=true;document.getElementById('authBtnTxt').innerHTML='<div class="spin-sm"></div>';
+  let error;
+  if(_authMode==='register'){
+    const name=document.getElementById('authName').value.trim();
+    const{data,error:e}=await sb.auth.signUp({email,password:pw,options:{data:{full_name:name}}});
+    error=e;
+    if(!error&&data?.user?.id)await sb.from('profiles').upsert({id:data.user.id,display_name:name||email.split('@')[0]});
+  }else{
+    const{error:e}=await sb.auth.signInWithPassword({email,password:pw});error=e;
+  }
+  btn.disabled=false;
+  document.getElementById('authBtnTxt').textContent=_authMode==='register'?'Créer mon compte':'Se connecter';
+  if(error)showAuthErr(error.message==='Invalid login credentials'?'Email ou mot de passe incorrect':error.message);
+}
+
+async function logout(){
+  await sb.auth.signOut();_profile=null;updateHeaderAva();goto('explorer');showToast('Déconnecté');
+}
+
+function updateHeaderAva(){
+  const lbl=document.getElementById('hl-profile-label');
+  if(lbl)lbl.textContent=_profile?.display_name?.split(' ')[0]||'Profil';
+  if(_user&&_profile)updateProfilePage();
+}
+
+function openAuth(action,hint){
+  _pa=action||null;_authMode='login';
+  document.getElementById('authTitle').textContent='Rejoindre Go2gether';
+  document.getElementById('authSub').textContent='Connecte-toi pour accéder à toutes les fonctionnalités';
+  document.getElementById('authBtnTxt').textContent='Se connecter';
+  document.getElementById('nameGroup').style.display='none';
+  document.getElementById('authToggle').innerHTML="Pas encore de compte ? <a onclick='toggleAuthMode()'>S'inscrire</a>";
+  document.getElementById('authErr').classList.remove('show');
+  const h=document.getElementById('authHint');
+  if(hint){h.textContent=hint;h.classList.add('show');}else h.classList.remove('show');
+  document.getElementById('authOverlay').classList.add('open');
+}
+function closeAuth(){document.getElementById('authOverlay').classList.remove('open');}
+function toggleAuthMode(){
+  _authMode=_authMode==='login'?'register':'login';const r=_authMode==='register';
+  document.getElementById('authTitle').textContent=r?'Créer un compte':'Se connecter';
+  document.getElementById('authSub').textContent=r?'Rejoins la communauté Go2gether':'Bon retour parmi nous !';
+  document.getElementById('nameGroup').style.display=r?'block':'none';
+  document.getElementById('authBtnTxt').textContent=r?'Créer mon compte':'Se connecter';
+  document.getElementById('authToggle').innerHTML=r?"Déjà un compte ? <a onclick='toggleAuthMode()'>Se connecter</a>":"Pas encore de compte ? <a onclick='toggleAuthMode()'>S'inscrire</a>";
+  document.getElementById('authErr').classList.remove('show');
+}
+function showAuthErr(msg){const e=document.getElementById('authErr');if(e){e.textContent=msg;e.classList.add('show');}}
+function requireAuth(action,hint){if(_user){action();return;}openAuth(action,hint);}
+function handleProfileClick(){
+  if(!_user){openAuth(null,null);return;}
+  goto('profile');
+}
+
+// ─── ROUTING ──────────────────────────────────────────────────────────────────
+function goto(page,btn,prefix){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page)?.classList.add('active');
+  // Update header nav
+  ['explorer','sessions','create','profile'].forEach(p=>{
+    document.getElementById('hl-'+p)?.classList.toggle('active',p===page);
+    document.getElementById('ml-'+p)?.classList.toggle('active',p===page);
+  });
+  window.scrollTo(0,0);
+  if(page==='sessions')loadSessions();
+  if(page==='explorer')loadProfiles();
+  if(page==='profile'){updateProfilePage();loadJoinedSessions();}
+}
+
+// ─── DATA LOADING ─────────────────────────────────────────────────────────────
+async function loadProfiles(){
+  const{data}=await sb.from('profiles').select('*').order('created_at',{ascending:false});
+  _profiles=data||[];renderExplorer();
+}
+async function loadSessions(){
+  const{data}=await sb.from('sessions').select('*').order('date',{ascending:true});
+  _sessions=data||[];renderSessions();
+}
+
+// ─── SPORT PILLS ──────────────────────────────────────────────────────────────
+function renderSportPills(type,items,currentSport,countFn){
+  const el=document.getElementById(type+'SportPills');if(!el)return;
+  const all=[{value:'',label:'Tous',emoji:'📋'},...SPORTS];
+  el.innerHTML=all.map(s=>{
+    const cnt=s.value?items.filter(p=>p.sport===s.value).length:items.length;
+    const active=currentSport===s.value;
+    const setter=type==='explorer'?`setExSport('${s.value}')`:`setSeSport('${s.value}')`;
+    return`<div class="sport-pill${active?' active':''}" onclick="${setter}">
+      <div class="sport-pill-top">${s.emoji} ${s.label}</div>
+      <div class="sport-pill-count">${cnt} ${type==='explorer'?'sportif':'session'}${cnt!==1?'s':''}</div>
+    </div>`;
+  }).join('');
+}
+function scrollSports(type,dir){
+  const el=document.getElementById(type+'SportPills');
+  if(el)el.scrollBy({left:dir*160,behavior:'smooth'});
+}
+function setExSport(v){_explorerSport=_explorerSport===v?'':v;renderExplorer();}
+function setSeSport(v){_sessionsSport=_sessionsSport===v?'':v;renderSessions();}
+
+// ─── EXPLORER ─────────────────────────────────────────────────────────────────
+function renderLevelChips(){
+  const el=document.getElementById('levelChips');if(!el)return;
+  el.innerHTML=`<div class="chip-divider"></div>`+
+    LEVELS.map(l=>`<div class="chip${_explorerLevel===l.value?' active':''}" onclick="setExLevel('${l.value}')">${l.label}</div>`).join('');
+}
+function setExLevel(v){_explorerLevel=_explorerLevel===v?'':v;renderExplorer();}
+
+function renderExplorer(){
+  renderSportPills('explorer',_profiles,_explorerSport);
+  renderLevelChips();
+  const q=(document.getElementById('explorerSearch')?.value||'').toLowerCase();
+  const items=_profiles.filter(p=>{
+    if(_user&&p.id===_user.id)return false;
+    if(_explorerSport&&p.sport!==_explorerSport)return false;
+    if(_explorerLevel&&p.level!==_explorerLevel)return false;
+    if(q&&!(p.display_name||'').toLowerCase().includes(q)&&!(p.city||'').toLowerCase().includes(q))return false;
+    return true;
+  });
+  const cnt=document.getElementById('explorerCount');
+  if(cnt)cnt.innerHTML=`<svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><circle cx="18" cy="8" r="2"/><path d="M22 20v-1a3 3 0 00-3-3h-1"/></svg><span>${items.length} sportif${items.length!==1?'s':''} trouvé${items.length!==1?'s':''}</span>`;
+  const grid=document.getElementById('explorerGrid');if(!grid)return;
+  if(_profiles.length===0){
+    grid.innerHTML=`<div class="grid-3">${[...Array(6)].map(()=>`<div class="skeleton" style="height:140px"></div>`).join('')}</div>`;
+    return;
+  }
+  if(!items.length){
+    grid.innerHTML=`<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">Aucun sportif trouvé</div><div class="empty-sub">Essaye de modifier tes filtres</div></div>`;
+    return;
+  }
+  grid.innerHTML=`<div class="grid-3">${items.map((p,i)=>athleteCardHTML(p,i)).join('')}</div>`;
+}
+
+function athleteCardHTML(p,i=0){
+  const sport=getSport(p.sport);
+  const avaHtml=p.avatar_url
+    ?`<img src="${p.avatar_url}" alt="">`
+    :`<div class="ac-ava-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>`;
+  const avTags=(p.availability||[]).map(a=>{const av=getAvail(a);return av?`<span class="avail-chip">${av.emoji} ${av.label}</span>`:''}).join('');
+  return`<div class="athlete-card" onclick="openProfileDetail('${p.id}')" style="animation-delay:${i*35}ms">
+    <div class="ac-top">
+      <div class="ac-ava">${avaHtml}</div>
+      <div style="flex:1;min-width:0">
+        <div class="ac-name">${p.display_name||'Anonyme'}</div>
+        ${p.city?`<div class="ac-city"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${p.city}</div>`:''}
+        <div class="ac-tags">
+          <span class="sport-badge">${sport.emoji} ${sport.label}</span>
+          ${p.level?`<span class="level-text">${getLevel(p.level)}</span>`:''}
+        </div>
+      </div>
+    </div>
+    ${p.bio?`<div class="ac-bio">${p.bio}</div>`:''}
+    ${avTags?`<div class="avail-wrap">${avTags}</div>`:''}
+  </div>`;
+}
+
+// ─── SESSIONS ─────────────────────────────────────────────────────────────────
+function renderSessions(){
+  renderSportPills('sessions',_sessions,_sessionsSport);
+  const q=(document.getElementById('sessionsSearch')?.value||'').toLowerCase();
+  const items=_sessions.filter(s=>{
+    if(_sessionsSport&&s.sport!==_sessionsSport)return false;
+    if(q&&!s.title?.toLowerCase().includes(q)&&!s.city?.toLowerCase().includes(q))return false;
+    return true;
+  });
+  const cnt=document.getElementById('sessionsCount');
+  if(cnt)cnt.innerHTML=`<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>${items.length} session${items.length!==1?'s':''}</span>`;
+  const grid=document.getElementById('sessionsGrid');if(!grid)return;
+  if(!items.length){
+    grid.innerHTML=`<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-title">Aucune session trouvée</div><div class="empty-sub">Crée ta première session !</div></div>`;
+    return;
+  }
+  grid.innerHTML=`<div class="grid-2">${items.map((s,i)=>sessionCardHTML(s,i)).join('')}</div>`;
+}
+
+function sessionCardHTML(s,i=0){
+  const sport=getSport(s.sport);
+  const cnt=s.participants?.length||0,left=s.max_spots-cnt,full=left<=0;
+  return`<div class="session-card" onclick="openSessionDetail('${s.id}')" style="animation-delay:${i*35}ms">
+    <div class="sc-stripe"></div>
+    <div class="sc-body">
+      <div class="sc-tags">
+        <span style="font-size:18px">${sport.emoji}</span>
+        <span class="sport-badge">${sport.label}</span>
+        ${s.level&&s.level!=='all'?`<span class="level-text">${getLevel(s.level)}</span>`:''}
+      </div>
+      <div class="sc-header">
+        <div class="sc-title">${s.title}</div>
+        <div class="sc-arrow"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+      </div>
+      <div class="sc-meta">
+        <div class="sc-meta-item"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>${fmtDate(s.date)}</div>
+        <div class="sc-meta-item"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${s.city||'—'}</div>
+        ${s.distance?`<span class="sc-dist">${s.distance}</span>`:''}
+      </div>
+      <div class="sc-footer">
+        <div class="sc-participants"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>${cnt}/${s.max_spots}</div>
+        <span class="spots-badge ${full?'spots-full':'spots-open'}">${full?'Complet':`${left} place${left>1?'s':''} restante${left>1?'s':''}`}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── PROFILE DETAIL ───────────────────────────────────────────────────────────
+async function openProfileDetail(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-profileDetail').classList.add('active');
+  document.getElementById('profileBackBtn').onclick=()=>goto('explorer');
+  const content=document.getElementById('profileDetailContent');
+  content.innerHTML=`<div class="empty-state"><div class="skeleton" style="width:28px;height:28px;border-radius:50%"></div><span>Chargement…</span></div>`;
+  window.scrollTo(0,0);
+  const p=_profiles.find(x=>x.id===id);
+  if(!p){content.innerHTML='<p style="color:var(--text-2);padding:40px;text-align:center">Profil introuvable</p>';return;}
+  const{data:sessions}=await sb.from('sessions').select('*').eq('organizer_id',id);
+  const{count:fc}=await sb.from('follows').select('*',{count:'exact',head:true}).eq('following_id',id);
+  let isFollowing=false;
+  if(_user){
+    const{data:fol}=await sb.from('follows').select('id').eq('follower_id',_user.id).eq('following_id',id);
+    isFollowing=fol?.length>0;
+  }
+  const sport=getSport(p.sport);
+  const avaHtml=p.avatar_url
+    ?`<img src="${p.avatar_url}" alt="">`
+    :`<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
+  const isOwn=_user?.id===id;
+  const avTags=(p.availability||[]).map(a=>{const av=getAvail(a);return av?`<span class="avail-chip">${av.emoji} ${av.label}</span>`:''}).join('');
+  content.innerHTML=`
+    <div class="profile-card">
+      <div class="profile-card-banner"></div>
+      <div class="profile-card-body">
+        <div class="profile-ava-row">
+          <div class="profile-big-ava">${avaHtml}</div>
+          ${!isOwn&&_user?`<div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" id="followBtn" onclick="toggleFollow('${id}','${isFollowing}')">${isFollowing?'<svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 11l2 2 4-4"/></svg> Abonné':'<svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M19 8v6M16 11h6"/></svg> Suivre'}</button>
+            <button class="btn btn-outline btn-sm" onclick="openContact('${id}')"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> Contacter</button>
+          </div>`:''}
+        </div>
+        <div class="profile-name">${p.display_name||'Anonyme'}</div>
+        ${p.city?`<div class="profile-city"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${p.city}</div>`:''}
+        <div class="profile-stats-row">
+          <span class="sport-badge">${sport.emoji} ${sport.label}</span>
+          ${p.level?`<span style="font-size:13px;color:var(--text-2)">${getLevel(p.level)}</span>`:''}
+          <span style="font-size:13px;color:var(--text-2)">${fc||0} abonné${fc!==1?'s':''}</span>
+        </div>
+        ${p.bio?`<div class="profile-bio">${p.bio}</div>`:''}
+        ${avTags?`<div class="profile-avails">${avTags}</div>`:''}
+      </div>
+    </div>
+    ${sessions?.length?`
+      <div style="display:flex;align-items:center;gap:8px;font-size:16px;font-weight:800;margin-bottom:14px">
+        <svg style="width:17px;height:17px;stroke:var(--orange);fill:none;stroke-width:2;stroke-linecap:round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Sessions organisées
+      </div>
+      <div class="grid-2">${sessions.map((s,i)=>sessionCardHTML(s,i)).join('')}</div>
+    `:''}
+  `;
+}
+
+async function toggleFollow(pid,wasFollowing){
+  requireAuth(async()=>{
+    const btn=document.getElementById('followBtn');if(btn)btn.disabled=true;
+    const isNow=wasFollowing==='true';
+    if(isNow){
+      await sb.from('follows').delete().eq('follower_id',_user.id).eq('following_id',pid);
+      if(btn){btn.innerHTML='<svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M19 8v6M16 11h6"/></svg> Suivre';btn.onclick=()=>toggleFollow(pid,'false');}
+    }else{
+      await sb.from('follows').insert({follower_id:_user.id,following_id:pid});
+      if(btn){btn.innerHTML='<svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 11l2 2 4-4"/></svg> Abonné';btn.onclick=()=>toggleFollow(pid,'true');}
+      showToast('Abonnement ajouté ✓');
+    }
+    if(btn)btn.disabled=false;
+  },'👋 Connecte-toi pour suivre des sportifs');
+}
+
+function openContact(id){
+  const p=_profiles.find(x=>x.id===id);if(!p)return;
+  const s=getSport(p.sport);
+  const prenom=(p.display_name||'').split(' ')[0];
+  const t0=`Salut ${prenom} ! J'ai vu ton profil sur Go2gether et ta pratique du ${s.label} m'intéresse ! On pourrait organiser une session ensemble prochainement ?`;
+  const t1=`Bonjour ${prenom}, j'ai découvert ton profil sur Go2gether. Je pratique le ${s.label} à un niveau similaire au tien. Si tu as une session prévue, je serais ravi d'en être !`;
+  const ov=document.getElementById('authOverlay');
+  const card=ov.querySelector('.auth-card');
+  card.innerHTML=`
+    <button class="auth-close" onclick="closeAuth()">✕</button>
+    <div style="padding:24px">
+      <div style="font-size:18px;font-weight:800;margin-bottom:4px">Contacter ${prenom}</div>
+      <div style="font-size:13px;color:var(--text-2);margin-bottom:16px">Choisis le ton, puis copie le message</div>
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <div class="chip active" id="ct0" onclick="swCt(0,'${id}')">Décontracté</div>
+        <div class="chip" id="ct1" onclick="swCt(1,'${id}')">Formel</div>
+      </div>
+      <textarea id="ctTA" style="width:100%;height:110px;padding:11px 13px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font);font-size:13px;color:var(--text);resize:vertical;outline:none;background:var(--bg);line-height:1.65">${t0}</textarea>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+        <button class="btn btn-outline" onclick="closeAuth()">Annuler</button>
+        <button class="btn btn-orange" onclick="copyContact()">Copier le message</button>
+      </div>
+    </div>`;
+  window._ctTmpls=[t0,t1];
+  ov.classList.add('open');
+}
+function swCt(i){
+  document.getElementById('ctTA').value=window._ctTmpls[i];
+  document.querySelectorAll('#ct0,#ct1').forEach((b,j)=>b.classList.toggle('active',j===i));
+}
+function copyContact(){
+  navigator.clipboard.writeText(document.getElementById('ctTA').value).catch(()=>{});
+  closeAuth();showToast('Message copié ✓');
+}
+
+// ─── SESSION DETAIL ───────────────────────────────────────────────────────────
+async function openSessionDetail(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-sessionDetail').classList.add('active');
+  window.scrollTo(0,0);
+  const content=document.getElementById('sessionDetailContent');
+  content.innerHTML=`<div class="empty-state"><span>Chargement…</span></div>`;
+  const{data:s}=await sb.from('sessions').select('*').eq('id',id).single();
+  if(!s){content.innerHTML='<p style="color:var(--text-2);padding:40px;text-align:center">Session introuvable</p>';return;}
+  _curSession=s;renderSessionDetail(s);
+}
+
+function renderSessionDetail(s){
+  const content=document.getElementById('sessionDetailContent');
+  const sport=getSport(s.sport);
+  const cnt=s.participants?.length||0,left=s.max_spots-cnt,full=left<=0;
+  const isOrg=_user?.id===s.organizer_id;
+  const isPart=s.participants?.includes(_user?.email);
+  const isPend=s.pending_participants?.includes(_user?.email);
+  const isOpen=(s.join_mode||'open')==='open';
+  const pending=s.pending_participants||[];
+  const dt=s.date?new Date(s.date):null;
+  content.innerHTML=`
+    <div class="session-detail-card">
+      <div class="sd-stripe"></div>
+      <div class="sd-body">
+        <div class="sd-top">
+          <div class="sd-sport-icon">${sport.emoji}</div>
+          <div style="flex:1">
+            <div class="sd-badges">
+              <span class="sport-badge">${sport.label}</span>
+              ${s.level&&s.level!=='all'?`<span style="font-size:12px;color:var(--text-2)">${getLevel(s.level)}</span>`:''}
+              <span class="mode-badge ${isOpen?'mode-open':'mode-request'}">${isOpen?'🟢 Ouvert':'🔒 Sur demande'}</span>
+            </div>
+            <div class="sd-title">${s.title}</div>
+          </div>
+          ${isOrg?`<button class="btn btn-outline btn-sm" onclick="openEditSession()"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Modifier</button>`:''}
+        </div>
+        <div class="info-grid">
+          <div class="info-cell">
+            <div class="info-label"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Date</div>
+            <div class="info-val">${dt?dt.toLocaleDateString('en',{weekday:'short',day:'numeric',month:'long'}):''}</div>
+            <div class="info-sub">${dt?dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):''}</div>
+          </div>
+          <div class="info-cell">
+            <div class="info-label"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Lieu</div>
+            <div class="info-val">${s.city||'—'}</div>
+            ${s.location_detail?`<div class="info-sub">${s.location_detail}</div>`:''}
+          </div>
+          ${s.distance?`<div class="info-cell"><div class="info-label"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Distance</div><div class="info-val">${s.distance}</div></div>`:''}
+          <div class="info-cell">
+            <div class="info-label"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>Places</div>
+            <div class="info-val">${cnt} / ${s.max_spots}</div>
+            <div class="info-sub" style="color:${full?'var(--red)':'var(--orange-dark)'}">${full?'Complet':`${left} restante${left>1?'s':''}`}</div>
+          </div>
+        </div>
+        ${s.description?`<div class="sd-description"><h3>Description</h3><p>${s.description}</p></div>`:''}
+        <div class="organizer-row">
+          <div class="org-ava"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+          <div><div class="organizer-label">Organisé par</div><div class="organizer-name">${s.organizer_name||s.organizer_email||'—'}</div></div>
+        </div>
+        ${isOrg&&pending.length?`
+          <div class="pending-section">
+            <div class="pending-title">Demandes en attente (${pending.length})</div>
+            ${pending.map(e=>`<div class="pending-item"><span class="pending-email">${e}</span><div style="display:flex;gap:6px"><button class="btn btn-sm" style="background:var(--green-bg);color:var(--green);border:1px solid #86efac" onclick="approveP('${e}')">✓</button><button class="btn btn-danger btn-sm" onclick="rejectP('${e}')">✕</button></div></div>`).join('')}
+          </div>`:''}
+        <div id="joinLeaveArea">
+          ${!isOrg?buildJoinBtn(isOpen,isPart,isPend,full):`<div style="text-align:center;font-size:13px;color:var(--text-2);padding:8px">Tu es l'organisateur de cette session</div>`}
+        </div>
+      </div>
+    </div>
+    ${(isPart||isOrg)?`<div id="chatArea"></div>`:''}
+  `;
+  if((isPart||isOrg)&&_user)renderChat(s.id);
+}
+
+function buildJoinBtn(isOpen,isPart,isPend,full){
+  if(isPart)return`<button class="btn btn-danger btn-full" onclick="leaveSession()"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/></svg>Quitter la session</button>`;
+  if(isPend)return`<div style="display:flex;align-items:center;justify-content:center;gap:10px;height:48px;background:#fffbeb;border:1px solid #fde68a;border-radius:var(--radius-sm);font-size:13.5px;color:var(--orange-dark)">⏳ Demande en attente <button onclick="leaveSession()" style="font-size:12px;text-decoration:underline;border:none;background:none;cursor:pointer;color:var(--orange-dark)">Annuler</button></div>`;
+  return`<button class="btn btn-orange btn-full" onclick="joinSession()" ${full&&isOpen?'disabled':''}><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>${full?'Complet':isOpen?'Rejoindre la session':'Demander à rejoindre'}</button>`;
+}
+
+async function joinSession(){
+  if(!_user){openAuth(()=>openSessionDetail(_curSession.id),'Connecte-toi pour rejoindre cette session');return;}
+  const s=_curSession,isOpen=(s.join_mode||'open')==='open';
+  if(isOpen){
+    if((s.participants?.length||0)>=s.max_spots){showToast('Session complète');return;}
+    const newP=[...(s.participants||[]),_user.email];
+    await sb.from('sessions').update({participants:newP}).eq('id',s.id);
+    _curSession={..._curSession,participants:newP};showToast('Tu as rejoint la session ! 🎉');
+  }else{
+    const newPend=[...(s.pending_participants||[]),_user.email];
+    await sb.from('sessions').update({pending_participants:newPend}).eq('id',s.id);
+    _curSession={..._curSession,pending_participants:newPend};showToast('Demande envoyée !');
+  }
+  renderSessionDetail(_curSession);
+}
+
+async function leaveSession(){
+  const s=_curSession;
+  const newP=(s.participants||[]).filter(e=>e!==_user?.email);
+  const newPend=(s.pending_participants||[]).filter(e=>e!==_user?.email);
+  await sb.from('sessions').update({participants:newP,pending_participants:newPend}).eq('id',s.id);
+  _curSession={..._curSession,participants:newP,pending_participants:newPend};
+  renderSessionDetail(_curSession);showToast('Tu as quitté la session');
+}
+
+async function approveP(email){
+  const s=_curSession;
+  const newPend=(s.pending_participants||[]).filter(e=>e!==email);
+  const newP=[...(s.participants||[]),email];
+  await sb.from('sessions').update({participants:newP,pending_participants:newPend}).eq('id',s.id);
+  _curSession={..._curSession,participants:newP,pending_participants:newPend};
+  renderSessionDetail(_curSession);showToast('Participant approuvé !');
+}
+async function rejectP(email){
+  const s=_curSession;
+  const newPend=(s.pending_participants||[]).filter(e=>e!==email);
+  await sb.from('sessions').update({pending_participants:newPend}).eq('id',s.id);
+  _curSession={..._curSession,pending_participants:newPend};
+  renderSessionDetail(_curSession);showToast('Demande refusée');
+}
+
+// ─── CHAT ─────────────────────────────────────────────────────────────────────
+async function renderChat(sessionId){
+  const area=document.getElementById('chatArea');if(!area)return;
+  area.innerHTML=`<div class="chat-section">
+    <div class="chat-header"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Discussion du groupe</div>
+    <div class="chat-messages" id="chatMsgs"><div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-3);font-size:12.5px">Chargement…</div></div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chatInput" placeholder="Écris un message..." onkeydown="if(event.key==='Enter')sendMsg('${sessionId}')">
+      <button class="chat-send" onclick="sendMsg('${sessionId}')"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+    </div>
+  </div>`;
+  loadMsgs(sessionId);
+  sb.channel('chat'+sessionId).on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`session_id=eq.${sessionId}`},()=>loadMsgs(sessionId)).subscribe();
+}
+async function loadMsgs(sid){
+  const{data}=await sb.from('messages').select('*').eq('session_id',sid).order('created_at',{ascending:true});
+  const el=document.getElementById('chatMsgs');if(!el)return;
+  if(!data?.length){el.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-3);font-size:12.5px">Pas encore de message — sois le premier 👋</div>`;return;}
+  el.innerHTML=data.map(m=>{
+    const mine=m.user_id===_user?.id;
+    const t=new Date(m.created_at).toLocaleString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    const relT=`Moi · ${t}`;
+    return`<div class="chat-msg ${mine?'mine':'theirs'}">
+      ${!mine?`<div class="chat-meta">${m.user_name||''} · ${t}</div>`:''}
+      <div class="chat-bubble">${m.content}</div>
+      ${mine?`<div class="chat-meta">${relT}</div>`:''}
+    </div>`;
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+async function sendMsg(sid){
+  const inp=document.getElementById('chatInput');if(!inp)return;
+  const txt=inp.value.trim();if(!txt)return;inp.value='';
+  await sb.from('messages').insert({session_id:sid,user_id:_user.id,user_name:_profile?.display_name||_user.email,content:txt});
+  loadMsgs(sid);
+}
+
+// ─── EDIT SESSION ─────────────────────────────────────────────────────────────
+function openEditSession(){
+  const s=_curSession;if(!s)return;
+  const ov=document.getElementById('authOverlay');
+  const card=ov.querySelector('.auth-card');
+  card.innerHTML=`
+    <button class="auth-close" onclick="closeAuth()">✕</button>
+    <div style="padding:24px">
+      <div style="font-size:18px;font-weight:800;margin-bottom:16px">Modifier la session</div>
+      <div class="form-group"><label class="form-label">Titre</label><input class="form-input" id="es_t" value="${s.title||''}"></div>
+      <div class="form-grid" style="margin-bottom:14px">
+        <div class="form-group"><label class="form-label">Ville</label><input class="form-input" id="es_c" value="${s.city||''}"></div>
+        <div class="form-group"><label class="form-label">Distance</label><input class="form-input" id="es_d" value="${s.distance||''}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="es_desc">${s.description||''}</textarea></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-orange" style="flex:1" onclick="saveEditSession()">Enregistrer</button>
+        <button class="btn btn-outline" onclick="closeAuth()">Annuler</button>
+      </div>
+    </div>`;
+  ov.classList.add('open');
+}
+async function saveEditSession(){
+  const u={title:document.getElementById('es_t').value.trim(),city:document.getElementById('es_c').value.trim(),distance:document.getElementById('es_d').value.trim(),description:document.getElementById('es_desc').value.trim()};
+  await sb.from('sessions').update(u).eq('id',_curSession.id);
+  _curSession={..._curSession,...u};closeAuth();renderSessionDetail(_curSession);showToast('Session mise à jour !');
+  loadSessions();
+}
+
+// ─── CREATE SESSION ───────────────────────────────────────────────────────────
+function initSelects(){
+  const cs=document.getElementById('cSport');
+  if(cs&&cs.children.length===1)SPORTS.forEach(s=>{const o=document.createElement('option');o.value=s.value;o.textContent=s.emoji+' '+s.label;cs.appendChild(o);});
+  const cl=document.getElementById('cLevel');
+  if(cl&&cl.children.length===1)LEVELS.forEach(l=>{const o=document.createElement('option');o.value=l.value;o.textContent=l.label;cl.appendChild(o);});
+  const es=document.getElementById('e-sport');
+  if(es&&es.children.length===1)SPORTS.forEach(s=>{const o=document.createElement('option');o.value=s.value;o.textContent=s.emoji+' '+s.label;es.appendChild(o);});
+  const el=document.getElementById('e-level');
+  if(el&&!el.children.length)LEVELS.forEach(l=>{const o=document.createElement('option');o.value=l.value;o.textContent=l.label;el.appendChild(o);});
+  const ea=document.getElementById('e-avail');
+  if(ea&&!ea.children.length)AVAILABILITIES.forEach(a=>{const b=document.createElement('button');b.type='button';b.className='avail-btn';b.dataset.val=a.value;b.textContent=a.emoji+' '+a.label;b.onclick=()=>b.classList.toggle('active');ea.appendChild(b);});
+}
+
+async function submitCreate(){
+  const title=document.getElementById('cTitle').value.trim();
+  const sport=document.getElementById('cSport').value;
+  const date=document.getElementById('cDate').value;
+  const city=document.getElementById('cCity').value.trim();
+  const err=document.getElementById('cErr');
+  if(!title||!sport||!date||!city){err.textContent='Remplis les champs obligatoires';err.classList.add('show');return;}
+  err.classList.remove('show');
+  const btn=document.getElementById('cBtn');btn.disabled=true;btn.innerHTML='<div class="spin-sm"></div> Création…';
+  const{data,error}=await sb.from('sessions').insert({
+    title,sport,date,city,
+    location_detail:document.getElementById('cLocation').value.trim(),
+    distance:document.getElementById('cDist').value.trim(),
+    max_spots:Number(document.getElementById('cMax').value)||5,
+    level:document.getElementById('cLevel').value||'all',
+    join_mode:document.getElementById('cJoinMode').value,
+    description:document.getElementById('cDesc').value.trim(),
+    participants:[_user.email],
+    organizer_id:_user.id,
+    organizer_email:_user.email,
+    organizer_name:_profile?.display_name||_user.email,
+  }).select().single();
+  btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg> Créer la session';
+  if(error){err.textContent=error.message;err.classList.add('show');return;}
+  showToast('Session créée ! 🎉');openSessionDetail(data.id);
+}
+
+// ─── MY PROFILE ───────────────────────────────────────────────────────────────
+function updateProfilePage(){
+  if(!_user||!_profile)return;
+  // Avatar
+  const ava=document.getElementById('myAva');
+  if(ava){
+    if(_profile.avatar_url)ava.innerHTML=`<img src="${_profile.avatar_url}" alt="">`;
+    else ava.innerHTML=`<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
+  }
+  const st=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v||'—';};
+  st('myName',_profile.display_name||_user.email);
+  st('myEmail',_user.email);
+  st('pr-name',_profile.display_name);
+  st('pr-city',_profile.city);
+  const sp=getSport(_profile.sport);
+  st('pr-sport',_profile.sport?sp.emoji+' '+sp.label:'');
+  st('pr-level',getLevel(_profile.level));
+  st('pr-bio',_profile.bio);
+}
+
+function setProfileEdit(on){
+  document.getElementById('profileViewSection').style.display=on?'none':'block';
+  document.getElementById('profileEditSection').style.display=on?'block':'none';
+  if(on&&_profile){
+    document.getElementById('e-name').value=_profile.display_name||'';
+    document.getElementById('e-city').value=_profile.city||'';
+    document.getElementById('e-sport').value=_profile.sport||'';
+    document.getElementById('e-level').value=_profile.level||'beginner';
+    document.getElementById('e-bio').value=_profile.bio||'';
+    document.querySelectorAll('#e-avail .avail-btn').forEach(b=>b.classList.toggle('active',(_profile.availability||[]).includes(b.dataset.val)));
+  }
+}
+
+async function saveProfile(){
+  const btn=document.getElementById('saveBtn');btn.disabled=true;btn.textContent='…';
+  const avail=[...document.querySelectorAll('#e-avail .avail-btn.active')].map(b=>b.dataset.val);
+  const u={id:_user.id,display_name:document.getElementById('e-name').value.trim(),city:document.getElementById('e-city').value.trim(),sport:document.getElementById('e-sport').value,level:document.getElementById('e-level').value,bio:document.getElementById('e-bio').value.trim(),availability:avail};
+  const{data}=await sb.from('profiles').upsert(u).select().single();
+  _profile=data;btn.disabled=false;btn.textContent='Sauvegarder le profil';
+  setProfileEdit(false);updateProfilePage();updateHeaderAva();await loadProfiles();
+  showToast('Profil sauvegardé ! ✓');
+}
+
+function triggerAva(){if(!_user){openAuth(null,null);return;}document.getElementById('avaInput').click();}
+async function uploadAva(input){
+  const file=input.files[0];if(!file)return;showToast('Upload en cours…');
+  const ext=file.name.split('.').pop(),path=`${_user.id}/avatar.${ext}`;
+  const{error}=await sb.storage.from('avatars').upload(path,file,{upsert:true});
+  if(error){showToast('Erreur upload');return;}
+  const{data:{publicUrl}}=sb.storage.from('avatars').getPublicUrl(path);
+  const url=publicUrl+'?t='+Date.now();
+  await sb.from('profiles').update({avatar_url:url}).eq('id',_user.id);
+  _profile={..._profile,avatar_url:url};updateProfilePage();updateHeaderAva();await loadProfiles();
+  showToast('Photo mise à jour ✓');
+}
+
+async function loadJoinedSessions(){
+  const el=document.getElementById('joinedList');if(!el)return;
+  if(!_user){el.textContent='Connecte-toi pour voir tes inscriptions.';return;}
+  const{data}=await sb.from('sessions').select('*').contains('participants',[_user.email]).neq('organizer_id',_user.id);
+  if(!data?.length){el.innerHTML='<span style="color:var(--text-3)">Aucune inscription pour l\'instant.</span>';return;}
+  el.innerHTML=data.map(s=>{
+    const sp=getSport(s.sport);
+    return`<div class="joined-item" onclick="openSessionDetail('${s.id}')">
+      <span style="font-size:18px">${sp.emoji}</span>
+      <div style="flex:1"><div style="font-size:13.5px;font-weight:600">${s.title}</div><div style="font-size:12px;color:var(--text-2);margin-top:2px">${fmtDate(s.date)} · ${s.city||''}</div></div>
+      <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </div>`;
+  }).join('');
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function showToast(msg,dur=2400){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur);}
+
+// ─── PWA ──────────────────────────────────────────────────────────────────────
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_deferredPrompt=e;if(!localStorage.getItem('g2g_idm'))setTimeout(()=>document.getElementById('installBanner').classList.add('show'),3000);});
+window.addEventListener('appinstalled',()=>{document.getElementById('installBanner').classList.remove('show');showToast('Go2gether installé ! 🎉');});
+function triggerInstall(){if(_deferredPrompt){_deferredPrompt.prompt();_deferredPrompt.userChoice.then(r=>{if(r.outcome==='accepted')showToast('Installation en cours…');else dismissInstall();_deferredPrompt=null;});}}
+function dismissInstall(){document.getElementById('installBanner').classList.remove('show');localStorage.setItem('g2g_idm','1');}
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+initSelects();
+loadProfiles();
+loadSessions();
+</script>
+</body>
+</html>
